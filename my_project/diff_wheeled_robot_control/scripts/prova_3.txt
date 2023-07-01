@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+
+import rospy
+import time
+
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+
+def callback(dt):
+    
+    twist = Twist()
+    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
+    
+    start_time = time.time()
+    durata_attesa = 5
+    
+    thr = 0.5 # Laser scan range threshold
+    
+    #consideriamo un range di 60 gradi per ogni direzioni in modo da aumentare l'efficienza
+    left = dt.ranges[679:719]    
+    front = dt.ranges[300:360]
+    right = dt.ranges[0:60]
+
+    left_bool = any(distance <= thr for distance in left)
+    front_bool = any(distance <= thr for distance in front)
+    right_bool = any(distance <= thr for distance in right)
+    
+    msg = '''
+    *****************************************************
+     LEFT    distance to object : {}   
+     FRONT   distance to object : {}   
+     RIGHT   distance to object : {}   
+    *****************************************************
+    '''.format(left, front, right)
+    
+    print(msg)
+    
+    if left_bool and front_bool and right_bool:
+        print("*-- Stop: vicolo cieco --*")
+        tmp = 0
+        while tmp < 10:
+            print("*-- inversione ad U --*")
+            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1  #con il - gira a destra
+            pub.publish(twist)    
+            tmp += 1
+
+    elif (left_bool or right_bool) and not front_bool:
+        print("*-- continuo dritto --*") 
+        twist.linear.x = 0.5; twist.linear.y = 0; twist.linear.z = 0
+        pub.publish(twist)
+
+    elif front_bool:
+        print("*-- Stop: oggetto a meno di 0.5 metri --*")
+        if not right_bool:
+            print("*-- Destra libera: giro a destra --*")
+            tmp = 0
+            while tmp < 5:
+                print("*-- giro a destra --*")
+                twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+                twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1  #con il - gira a destra
+                pub.publish(twist) 
+        if not left_bool:
+            print("*-- Sinistra libera: giro a sinistra --*")
+            tmp = 0
+            while tmp < 5:
+                print("*-- giro a sinistra --*")
+                twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+                twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 1  #con il + gira a sinistra
+                pub.publish(twist)    
+    
+def main():
+    
+    rospy.init_node('turtlebot_teleop', anonymous=True)
+    sub = rospy.Subscriber('/scan', LaserScan, callback) 
+    
+    while not rospy.is_shutdown():  
+        rospy.spin()
+
+if __name__=="__main__":
+
+    try:      
+        print("cammina")  
+        main()     
+
+    except:
+        pass
+
+    finally:
+        twist = Twist()
+        twist.linear.x = 0; twist.linear.y = 0; twist.linear.z
