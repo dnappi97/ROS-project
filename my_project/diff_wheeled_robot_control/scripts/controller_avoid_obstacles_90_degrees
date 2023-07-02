@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+import rospy
+
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+
+def callback(dt):
+    
+    twist = Twist()
+    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
+    
+    waiting_time = 8
+    
+    thr = 0.55 # Laser scan range threshold
+    
+    #we consider a range of 90 degrees for each direction in order to increase efficiency
+    left = dt.ranges[629:719]    
+    front = dt.ranges[315:405]
+    right = dt.ranges[0:90]
+
+    left_bool = any(distance <= thr for distance in left)
+    front_bool = any(distance <= thr for distance in front)
+    right_bool = any(distance <= thr for distance in right)
+    
+    msg = '''
+    *****************************************************
+     LEFT    distance to object : {}   
+     FRONT   distance to object : {}   
+     RIGHT   distance to object : {}   
+    *****************************************************
+    '''.format(left, front, right)
+    
+    
+    if not front_bool:
+        print ("\n*-- go forward --*") 
+        twist.linear.x = 0.5; twist.linear.y = 0; twist.linear.z = 0
+        pub.publish(twist)
+    else:
+        print("\n*-- Stop: object at less than "+str(thr)+" meters --*")
+        tmp = 0
+        while tmp < waiting_time:
+            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 #con il - gira a destra
+            pub.publish(twist)    
+            print("*-- right turn --*")
+            tmp += 1  
+    
+    #when the robot has an obstacle in front of it
+    if left_bool:
+        print("\n*-- Stop left: object at less than "+str(thr)+" meters--*")
+        tmp = 0
+        while tmp < waiting_time:
+            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 #con il - gira a destra
+            pub.publish(twist)    
+            print("*-- right turn --*")
+            tmp += 1 
+    
+      
+    if front_bool and left_bool and right_bool:
+        print ("\n*-- Stop: dead-end street --*")
+        tmp = 0
+        while tmp < waiting_time + waiting_time:
+            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 #con il - gira a destra
+            pub.publish(twist)    
+            print ("*-- U-Turn --*")
+            tmp += 1 
+             
+    pub.publish(twist)    
+
+    return 
+    
+       
+def main():
+    
+    rospy.init_node('turtlebot_teleop', anonymous=True)
+    sub = rospy.Subscriber('/scan', LaserScan, callback) 
+    
+    while not rospy.is_shutdown():  
+        rospy.spin()
+
+if __name__=="__main__":
+
+    try:      
+        print ("**-- Robot walks --**")  
+        main()     
+
+    except:
+        pass
+
+    finally:
+        twist = Twist()
+        twist.linear.x = 0; twist.linear.y = 0; twist.linear.z
