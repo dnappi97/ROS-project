@@ -37,6 +37,14 @@
   <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
 	args="-urdf -model diff_wheeled_robot -param robot_description -x 0.049 -y -9.07 -z 0.49 -Y 1.7"/> 	
+	
+  <!--  Controller Avoid Obstacles  -->
+   <rosparam file ="$(find diff_wheeled_robot_control)/config/my_diff_drive.yaml" command="load"/> 
+
+   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="mobile_base_controller" />	
   
 
 </launch>
+
+
+
