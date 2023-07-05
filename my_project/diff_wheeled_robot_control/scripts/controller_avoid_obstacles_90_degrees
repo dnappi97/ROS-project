@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import random
 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
@@ -10,7 +11,7 @@ def callback(dt):
     twist = Twist()
     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
     
-    waiting_time = 8
+    waiting_time = 6
     
     thr = 0.55 # Laser scan range threshold
     
@@ -22,16 +23,36 @@ def callback(dt):
     left_bool = any(distance <= thr for distance in left)
     front_bool = any(distance <= thr for distance in front)
     right_bool = any(distance <= thr for distance in right)
-    
-    msg = '''
-    *****************************************************
-     LEFT    distance to object : {}   
-     FRONT   distance to object : {}   
-     RIGHT   distance to object : {}   
-    *****************************************************
-    '''.format(left, front, right)
-    
-    
+      
+    if front_bool and left_bool and right_bool:
+        print ("\n*-- Stop: dead-end street --*")
+        tmp = 0
+        while tmp < waiting_time + waiting_time:
+            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 
+            pub.publish(twist)    
+            print ("*-- U-Turn --*")
+            tmp += 1 
+            
+    choice = bool(random.randrange(0,10))
+    if  choice == 2:
+        tmp = 0
+        while tmp < waiting_time + waiting_time:
+                twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+                twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 #turn right
+                pub.publish(twist)    
+                print("*-- right turn --*")
+                tmp += 1
+                
+    elif  choice == 6:
+        tmp = 0
+        while tmp < waiting_time + waiting_time: 
+                twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+                twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 1 #turn left
+                pub.publish(twist)    
+                print("*-- right left --*")
+                tmp += 1                   
+            
     if not front_bool:
         print ("\n*-- go forward --*") 
         twist.linear.x = 0.5; twist.linear.y = 0; twist.linear.z = 0
@@ -39,12 +60,21 @@ def callback(dt):
     else:
         print("\n*-- Stop: object at less than "+str(thr)+" meters --*")
         tmp = 0
-        while tmp < waiting_time:
-            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 #con il - gira a destra
-            pub.publish(twist)    
-            print("*-- right turn --*")
-            tmp += 1  
+        choice = bool(random.randint(0,1))
+        if choice and not right_bool:
+            while tmp < waiting_time:
+                twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+                twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 #turn right
+                pub.publish(twist)    
+                print("*-- right turn --*")
+                tmp += 1
+        elif not choice and not left_bool:
+            while tmp < waiting_time:
+                twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+                twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 1 #turn left
+                pub.publish(twist)    
+                print("*-- right left --*")
+                tmp += 1             
     
     #when the robot has an obstacle in front of it
     if left_bool:
@@ -52,24 +82,23 @@ def callback(dt):
         tmp = 0
         while tmp < waiting_time:
             twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 #con il - gira a destra
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 
             pub.publish(twist)    
             print("*-- right turn --*")
             tmp += 1 
+            
+            
+    if right_bool:
+        print("\n*-- Stop right: object at less than "+str(thr)+" meters--*")
+        tmp = 0
+        while tmp < waiting_time:
+            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = +1 
+            pub.publish(twist)    
+            print("*-- right left --*")
+            tmp += 1        
     
       
-    if front_bool and left_bool and right_bool:
-        print ("\n*-- Stop: dead-end street --*")
-        tmp = 0
-        while tmp < waiting_time + waiting_time:
-            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -1 #con il - gira a destra
-            pub.publish(twist)    
-            print ("*-- U-Turn --*")
-            tmp += 1 
-             
-    pub.publish(twist)    
-
     return 
     
        
