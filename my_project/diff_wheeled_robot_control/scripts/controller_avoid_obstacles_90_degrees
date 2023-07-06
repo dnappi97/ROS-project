@@ -93,9 +93,9 @@ def callback(dt):
         tmp = 0
         while tmp < waiting_time:
             twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = +1 
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 1 
             pub.publish(twist)    
-            print("*-- right left --*")
+            print("*-- left turn --*")
             tmp += 1        
     
       
