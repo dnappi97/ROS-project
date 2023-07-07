@@ -34,7 +34,7 @@ def callback(dt):
             print ("*-- U-Turn --*")
             tmp += 1 
             
-    choice = bool(random.randrange(0,10))
+    choice = random.randint(0,10)
     if  choice == 2:
         tmp = 0
         while tmp < waiting_time + waiting_time:
