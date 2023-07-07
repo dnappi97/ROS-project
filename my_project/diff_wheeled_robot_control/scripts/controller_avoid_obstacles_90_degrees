@@ -104,7 +104,7 @@ def callback(dt):
        
 def main():
     
-    rospy.init_node('turtlebot_teleop', anonymous=True)
+    rospy.init_node('avoid_obstacles_node', anonymous=True)
     sub = rospy.Subscriber('/scan', LaserScan, callback) 
     
     while not rospy.is_shutdown():  
